@@ -10,6 +10,10 @@
 #define DS_ERR_FILE_OPEN_FAILED  1
 #define DS_ERR_JSON_PARSE_FAILED 2
 
+#define COL_TYPE_NUM   1
+#define COL_TYPE_CAT   2
+#define COL_TYPE_META  3
+
 class Dataset : public QAbstractTableModel
 {
     Q_OBJECT
@@ -21,6 +25,10 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
     int loadData(QString schema_file, QString data_file);
+
+    void get_training_dimensions(unsigned int *num_data, unsigned int *num_input, unsigned int *num_output);
+    void get_training_row(unsigned int row, float input[], float output[]);
+
 signals:
 
 public slots:

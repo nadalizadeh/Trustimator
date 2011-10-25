@@ -6,79 +6,21 @@
 
 using namespace std;
 
-EstimatorNeuralNet1::EstimatorNeuralNet1()
+EstimatorNeuralNet1::EstimatorNeuralNet1() : EstimatorNeuralNet()
 {
+    setupParams();
 }
+
+void EstimatorNeuralNet1::setupParams()
+{
+    cerr << "setup" << endl;
+    params["network_def"] = QVariant("../../../../x.credit_scoring.net");
+}
+
 
 QString EstimatorNeuralNet1::getName()
 {
     return "Neural Network 1";
-}
-
-struct fann_train_data* EstimatorNeuralNet1::getFannData()
-{
-    unsigned int num_input, num_output, num_data, i;
-    fann_type *data_input, *data_output;
-    struct fann_train_data *data =
-            (struct fann_train_data *) malloc(sizeof(struct fann_train_data));
-
-    if(data == NULL)
-    {
-        fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
-        return NULL;
-    }
-
-    this->dataset->get_training_dimensions(&num_data, &num_input, &num_output);
-
-    fann_init_error_data((struct fann_error *) data);
-
-    data->num_data = num_data;
-    data->num_input = num_input;
-    data->num_output = num_output;
-    data->input = (fann_type **) calloc(num_data, sizeof(fann_type *));
-    if(data->input == NULL)
-    {
-        fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
-        fann_destroy_train(data);
-        return NULL;
-    }
-
-    data->output = (fann_type **) calloc(num_data, sizeof(fann_type *));
-    if(data->output == NULL)
-    {
-        fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
-        fann_destroy_train(data);
-        return NULL;
-    }
-
-    data_input = (fann_type *) calloc(num_input * num_data, sizeof(fann_type));
-    if(data_input == NULL)
-    {
-        fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
-        fann_destroy_train(data);
-        return NULL;
-    }
-
-    data_output = (fann_type *) calloc(num_output * num_data, sizeof(fann_type));
-    if(data_output == NULL)
-    {
-        fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
-        fann_destroy_train(data);
-        return NULL;
-    }
-
-    for(i = 0; i != num_data; i++)
-    {
-        data->input[i] = data_input;
-        data_input += num_input;
-
-        data->output[i] = data_output;
-        data_output += num_output;
-
-        this->dataset->get_training_row(i, data->input[i], data->output[i]);
-    }
-
-    return data;
 }
 
 int nn_callback(struct fann *ann, struct fann_train_data */*train*/,
@@ -91,13 +33,58 @@ int nn_callback(struct fann *ann, struct fann_train_data */*train*/,
     return 0; // -1 to break
 }
 
+void EstimatorNeuralNet1::loadNetwork()
+{
+    char * network_def = params["network_def"].toString().toUtf8().data();
+    this->ann = fann_create_from_file(network_def);
+}
+
+void EstimatorNeuralNet1::createNetwork(int num_input, int num_output)
+{
+    const unsigned int num_layers = 4;
+    const unsigned int num_neurons_hidden = 8;
+
+    this->ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_neurons_hidden, num_output);
+
+    fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
+    fann_set_activation_function_output(ann, FANN_LINEAR);
+    fann_set_training_algorithm(ann, FANN_TRAIN_RPROP);
+}
+
+void EstimatorNeuralNet1::test()
+{
+    cerr << "ENN::test()" << endl;
+
+    struct fann_train_data * data = NULL;
+    data = this->getFannData();
+
+    fann_type *calc_out;
+    float average_error = 0;
+
+    for(int i = 0; i < fann_length_train_data(data); i++)
+    {
+        fann_reset_MSE(ann);
+        {
+            fann_scale_input( ann, data->input[i] );
+            calc_out = fann_run( ann, data->input[i] );
+            fann_descale_output( ann, calc_out );
+        }
+
+        average_error += (float) fann_abs(calc_out[0] - data->output[i][0]);
+        fprintf(stderr, "Result %f original %f error %f\n",
+               calc_out[0], data->output[i][0],
+               (float) fann_abs(calc_out[0] - data->output[i][0]));
+    }
+    average_error /= fann_length_train_data(data);
+
+    fprintf(stderr, "Average Error : %f\n", average_error);
+    fann_destroy_train(data);
+    fann_destroy(ann);
+}
+
 void EstimatorNeuralNet1::train()
 {
-    //const unsigned int num_input = 24;
-    //const unsigned int num_output = 1;
-    const unsigned int num_layers = 4;
-    const unsigned int num_neurons_hidden = 24;
-    const unsigned int max_epochs = 4000;
+    const unsigned int max_epochs = 3000;
     const unsigned int epochs_between_reports = 50;
     const float desired_error = (const float) 0.001;
 
@@ -112,13 +99,6 @@ void EstimatorNeuralNet1::train()
     cerr << "  " << data->output[0][0];
     cerr << endl;
 
-    struct fann *ann = fann_create_standard(num_layers, data->num_input, num_neurons_hidden, num_neurons_hidden, data->num_output);
-
-    fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
-    fann_set_activation_function_output(ann, FANN_LINEAR);
-    fann_set_training_algorithm(ann, FANN_TRAIN_RPROP);
-    fann_set_callback(ann, nn_callback);
-
     fann_set_scaling_params(
             ann,
             data,
@@ -127,6 +107,7 @@ void EstimatorNeuralNet1::train()
             -1,     /* New output minimum */
             1);     /* New output maximum */
 
+    fann_set_callback(ann, nn_callback);
     fann_scale_train( ann, data );
 
     for(unsigned i=0; i<data->num_input; i++)
@@ -138,6 +119,7 @@ void EstimatorNeuralNet1::train()
 
     fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
     free( data );
-    fann_save(ann, "../../../german__.net");
+
+    fann_save(ann, params["network_def"].toString().toUtf8().data());
     fann_destroy(ann);
 }

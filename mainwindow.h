@@ -19,8 +19,10 @@ public:
 private:
     Ui::MainWindow *ui;
     Dataset* dataSet;
+    Dataset* testDataSet;
 
 private slots:
+    void on_testButton_clicked();
     void on_goButton_clicked();
 };
 

@@ -4,6 +4,7 @@
 #include <QJson/parser.h>
 #include <QFile>
 #include <iostream>
+#include <cassert>
 
 using namespace std;
 
@@ -14,6 +15,10 @@ Dataset::Dataset(QObject *parent) :
 
 int Dataset::loadData(QString schema_file_name, QString data_file)
 {
+    // Reset Data
+    vdata.clear();
+    schema.clear();
+
     // CSV File Import
 
     FILE* f = fopen(data_file.toUtf8().data(), "r");
@@ -32,9 +37,12 @@ int Dataset::loadData(QString schema_file_name, QString data_file)
         QString qline = line;
         QStringList row = qline.split(",");
 
+        if (row.size() < 2)
+            continue;
+
         vdata.append(row);
     }
-
+    cerr << "DS::loadData() : " << vdata.size() << " records." << endl;
     fclose(f);
 
     // JSON Schema File Import
@@ -112,3 +120,68 @@ QVariant Dataset::headerData(int section, Qt::Orientation orientation, int role)
         return QVariant();
 }
 
+// Learning algorithm dataset integeration
+void Dataset::get_training_dimensions(unsigned int *num_data, unsigned int *num_input, unsigned int *num_output)
+{
+    *num_data = vdata.size();
+    *num_input = schema.size()-1;
+    *num_output = 1;
+
+    // Filter Meta Columns
+    for(int i=0; i<schema.size(); i++)
+    {
+        if (schema[i].value("Type").toInt() == COL_TYPE_META)
+        {
+            cerr << "Removing column " << schema[i].value("Name").toString().toStdString() << endl;
+            (*num_input)--;
+        }
+
+        if (schema[i].value("Type").toInt() == COL_TYPE_CAT)
+        {
+            QVariantMap values = schema[i].value("Values").toMap();
+            cerr << "Feeding " << schema[i].value("Name").toString().toStdString() << " - " << values.size() << " combinations." << endl;
+
+            (*num_input) += values.size() - 1;
+        }
+    }
+}
+
+void Dataset::get_training_row(unsigned int row, float input[], float output[])
+{
+//    unsigned int num_data, num_input, num_output;
+
+    assert(row < (unsigned int)vdata.size());
+
+    QStringList cur_row = vdata[row];
+    unsigned input_index = 0;
+    for(int i=0; i<schema.size() - 1; i++)
+    {
+        switch(schema[i].value("Type").toInt())
+        {
+        case COL_TYPE_META:
+            continue;
+
+        case COL_TYPE_CAT:
+            {
+                QVariantMap values = schema[i].value("Values").toMap();
+                int cval = QVariant( cur_row.at(i) ).toInt();
+                for(int j=0; j<values.size(); j++)
+                {
+                    input[input_index] = (cval == (j+1)) ? 1 : -1;
+                    input_index++;
+                }
+                break;
+            }
+
+        case COL_TYPE_NUM:
+            input[input_index] = QVariant( cur_row.at(i) ).toFloat();
+            input_index++;
+            break;
+
+        default:
+            qFatal("Unhandled variable type");
+        }
+    }
+
+    output[0] = QVariant( cur_row.at(schema.size()-1) ).toFloat();
+}

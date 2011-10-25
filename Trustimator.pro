@@ -19,7 +19,17 @@ SOURCES += main.cpp\
     QJson/parser.cpp \
     QJson/json_scanner.cpp \
     QJson/json_parser.cc \
-    dataset.cpp
+    dataset.cpp \
+    fann/src/floatfann.c \
+    fann/src/fann.c \
+    fann/src/fann_train.c \
+    fann/src/fann_train_data.c \
+    fann/src/fann_io.c \
+    fann/src/fann_error.c \
+    fann/src/fann_cascade.c \
+    estimator_base.cpp \
+    estimator_neuralnet1.cpp \
+    estimator_neuralnet.cpp
 
 HEADERS  += mainwindow.h \
     QJson/stack.hh \
@@ -35,6 +45,24 @@ HEADERS  += mainwindow.h \
     QJson/location.hh \
     QJson/json_scanner.h \
     QJson/json_parser.hh \
-    dataset.h
+    dataset.h \
+    fann/include/floatfann.h \
+    fann/include/fixedfann.h \
+    fann/include/fann.h \
+    fann/include/fann_train.h \
+    fann/include/fann_io.h \
+    fann/include/fann_internal.h \
+    fann/include/fann_error.h \
+    fann/include/fann_data.h \
+    fann/include/fann_cpp.h \
+    fann/include/fann_cascade.h \
+    fann/include/fann_activation.h \
+    fann/include/doublefann.h \
+    fann/include/config.h \
+    fann/include/compat_time.h \
+    estimator_base.h \
+    estimator_neuralnet1.h \
+    estimator_neuralnet.h
 
 FORMS    += mainwindow.ui
+INCLUDEPATH += fann/include

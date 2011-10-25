@@ -1,18 +1,20 @@
 #ifndef ESTIMATOR_NEURALNET1_H
 #define ESTIMATOR_NEURALNET1_H
 
-#include "estimator_base.h"
+#include "estimator_neuralnet.h"
 
-class EstimatorNeuralNet1 : public EstimatorBase
+class EstimatorNeuralNet1 : public EstimatorNeuralNet
 {
 public:
     EstimatorNeuralNet1();
 
     virtual QString getName();
-    void train();
+    void setupParams();
 
-private:
-    struct fann_train_data* getFannData();
+    virtual void loadNetwork();
+    virtual void createNetwork(int num_input, int num_output);
+    virtual void train();
+    virtual void test();
 };
 
 #endif // ESTIMATOR_NEURALNET1_H
