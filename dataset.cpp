@@ -94,8 +94,19 @@ QVariant Dataset::data(const QModelIndex &index, int role) const
     switch(role)
     {
     case Qt::DisplayRole:
-        return vdata.at(index.row()).at(index.column());
-        break;
+        {
+            QString v = vdata.at(index.row()).at(index.column());
+
+            if (schema[index.column()].value("Type").toInt() == COL_TYPE_CAT)
+            {
+                int iv = QVariant(v).toInt();
+                QVariantList values = schema[index.column()].value("Values").toList();
+                return values.at(iv-1).toString();
+            }
+
+            return v;
+            break;
+        }
     case Qt::TextAlignmentRole:
         return Qt::AlignCenter;
     case Qt::BackgroundColorRole:
@@ -132,14 +143,14 @@ void Dataset::get_training_dimensions(unsigned int *num_data, unsigned int *num_
     {
         if (schema[i].value("Type").toInt() == COL_TYPE_META)
         {
-            cerr << "Removing column " << schema[i].value("Name").toString().toStdString() << endl;
+            // cerr << "Removing column " << schema[i].value("Name").toString().toStdString() << endl;
             (*num_input)--;
         }
 
         if (schema[i].value("Type").toInt() == COL_TYPE_CAT)
         {
-            QVariantMap values = schema[i].value("Values").toMap();
-            cerr << "Feeding " << schema[i].value("Name").toString().toStdString() << " - " << values.size() << " combinations." << endl;
+            QVariantList values = schema[i].value("Values").toList();
+            // cerr << "Feeding " << schema[i].value("Name").toString().toStdString() << " - " << values.size() << " combinations." << endl;
 
             (*num_input) += values.size() - 1;
         }
@@ -163,7 +174,7 @@ void Dataset::get_training_row(unsigned int row, float input[], float output[])
 
         case COL_TYPE_CAT:
             {
-                QVariantMap values = schema[i].value("Values").toMap();
+                QVariantList values = schema[i].value("Values").toList();
                 int cval = QVariant( cur_row.at(i) ).toInt();
                 for(int j=0; j<values.size(); j++)
                 {

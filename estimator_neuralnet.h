@@ -16,7 +16,7 @@ public:
     virtual void test() = 0;
 
 protected:
-    struct fann_train_data* getFannData();
+    struct fann_train_data* getFannData(Dataset* dataset);
     struct fann *ann;
 };
 

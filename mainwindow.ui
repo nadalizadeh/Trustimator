@@ -11,14 +11,14 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Trustimator</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QPushButton" name="goButton">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>370</y>
       <width>114</width>
       <height>32</height>
      </rect>
@@ -31,7 +31,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
+      <y>10</y>
       <width>631</width>
       <height>351</height>
      </rect>
@@ -42,12 +42,15 @@
     <property name="gridStyle">
      <enum>Qt::DotLine</enum>
     </property>
+    <attribute name="horizontalHeaderCascadingSectionResizes">
+     <bool>true</bool>
+    </attribute>
    </widget>
    <widget class="QPushButton" name="testButton">
     <property name="geometry">
      <rect>
       <x>130</x>
-      <y>10</y>
+      <y>370</y>
       <width>114</width>
       <height>32</height>
      </rect>

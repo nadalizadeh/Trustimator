@@ -3,6 +3,7 @@
 EstimatorBase::EstimatorBase()
 {
     this->dataset = NULL;
+    this->validationDataset = NULL;
 }
 
 QString EstimatorBase::getName()

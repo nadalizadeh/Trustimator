@@ -15,6 +15,7 @@ public:
     virtual QString getName();
     virtual void setupParams() = 0;
     Dataset* dataset;
+    Dataset* validationDataset;
 
 public:
     QMap<QString, QVariant> params;

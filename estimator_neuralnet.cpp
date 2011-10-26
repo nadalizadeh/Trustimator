@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cstdio>
 
+using namespace std;
+
 EstimatorNeuralNet::EstimatorNeuralNet() : EstimatorBase()
 {
     this->ann = NULL;
@@ -14,8 +16,10 @@ QString EstimatorNeuralNet::getName()
     return "Neural Network";
 }
 
-struct fann_train_data* EstimatorNeuralNet::getFannData()
+struct fann_train_data* EstimatorNeuralNet::getFannData(Dataset* dset)
 {
+    if (dset == NULL) return NULL;
+
     unsigned int num_input, num_output, num_data, i;
     fann_type *data_input, *data_output;
     struct fann_train_data *data =
@@ -27,8 +31,9 @@ struct fann_train_data* EstimatorNeuralNet::getFannData()
         return NULL;
     }
 
-    this->dataset->get_training_dimensions(&num_data, &num_input, &num_output);
+    dset->get_training_dimensions(&num_data, &num_input, &num_output);
 
+    // cerr << "Initializing using " << num_data << " i " << num_input << endl;
     fann_init_error_data((struct fann_error *) data);
 
     data->num_data = num_data;
@@ -74,7 +79,7 @@ struct fann_train_data* EstimatorNeuralNet::getFannData()
         data->output[i] = data_output;
         data_output += num_output;
 
-        this->dataset->get_training_row(i, data->input[i], data->output[i]);
+        dset->get_training_row(i, data->input[i], data->output[i]);
     }
 
     return data;
