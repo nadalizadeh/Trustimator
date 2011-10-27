@@ -30,6 +30,7 @@ int Dataset::loadData(QString schema_file_name, QString data_file)
 
     while(!feof(f))
     {
+        memset(line, 0, 1024);
         fgets(line, 1024, f);
         if (strlen(line) < 2)
             continue;
@@ -37,7 +38,7 @@ int Dataset::loadData(QString schema_file_name, QString data_file)
         QString qline = line;
         QStringList row = qline.split(",");
 
-        if (row.size() < 2)
+        if (row.size() < 4)
             continue;
 
         vdata.append(row);
@@ -178,7 +179,7 @@ void Dataset::get_training_row(unsigned int row, float input[], float output[])
                 int cval = QVariant( cur_row.at(i) ).toInt();
                 for(int j=0; j<values.size(); j++)
                 {
-                    input[input_index] = (cval == (j+1)) ? 1 : -1;
+                    input[input_index] = (cval == (j+1)) ? 1 : 0;
                     input_index++;
                 }
                 break;
@@ -195,4 +196,36 @@ void Dataset::get_training_row(unsigned int row, float input[], float output[])
     }
 
     output[0] = QVariant( cur_row.at(schema.size()-1) ).toFloat();
+}
+
+void Dataset::get_scale_flags(int should_scale[])
+{
+    unsigned input_index = 0;
+    for(int i=0; i<schema.size() - 1; i++)
+    {
+        switch(schema[i].value("Type").toInt())
+        {
+        case COL_TYPE_META:
+            continue;
+
+        case COL_TYPE_CAT:
+            {
+                QVariantList values = schema[i].value("Values").toList();
+                for(int j=0; j<values.size(); j++)
+                {
+                    should_scale[input_index] = 0;
+                    input_index++;
+                }
+                break;
+            }
+
+        case COL_TYPE_NUM:
+            should_scale[input_index] = 1;
+            input_index++;
+            break;
+
+        default:
+            qFatal("Unhandled variable type");
+        }
+    }
 }

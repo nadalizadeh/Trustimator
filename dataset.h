@@ -28,6 +28,7 @@ public:
 
     void get_training_dimensions(unsigned int *num_data, unsigned int *num_input, unsigned int *num_output);
     void get_training_row(unsigned int row, float input[], float output[]);
+    void get_scale_flags(int should_scale[]);
 
 signals:
 

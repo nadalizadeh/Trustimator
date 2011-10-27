@@ -20,10 +20,14 @@ private:
     Ui::MainWindow *ui;
     Dataset* dataSet;
     Dataset* testDataSet;
+    class EstimatorNeuralNet* nnet;
 
 private slots:
     void on_testButton_clicked();
     void on_goButton_clicked();
+
+private:
+    bool check_if_running();
 };
 
 #endif // MAINWINDOW_H

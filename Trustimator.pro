@@ -20,7 +20,6 @@ SOURCES += main.cpp\
     QJson/json_scanner.cpp \
     QJson/json_parser.cc \
     dataset.cpp \
-    fann/src/floatfann.c \
     fann/src/fann.c \
     fann/src/fann_train.c \
     fann/src/fann_train_data.c \
@@ -29,7 +28,8 @@ SOURCES += main.cpp\
     fann/src/fann_cascade.c \
     estimator_base.cpp \
     estimator_neuralnet1.cpp \
-    estimator_neuralnet.cpp
+    estimator_neuralnet.cpp \
+    estimator_neuralnetcascade.cpp
 
 HEADERS  += mainwindow.h \
     QJson/stack.hh \
@@ -62,7 +62,8 @@ HEADERS  += mainwindow.h \
     fann/include/compat_time.h \
     estimator_base.h \
     estimator_neuralnet1.h \
-    estimator_neuralnet.h
+    estimator_neuralnet.h \
+    estimator_neuralnetcascade.h
 
 FORMS    += mainwindow.ui
 INCLUDEPATH += fann/include

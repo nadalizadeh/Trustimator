@@ -19,6 +19,8 @@ public:
 
 public:
     QMap<QString, QVariant> params;
+    bool is_running;
+    bool break_when_possible;
 };
 
 #endif // ESTIMATOR_BASE_H

@@ -1,4 +1,4 @@
-#include "estimator_neuralnet1.h"
+#include "estimator_neuralnetcascade.h"
 #include "fann.h"
 #include "dataset.h"
 #include <iostream>
@@ -8,31 +8,30 @@
 
 using namespace std;
 
-EstimatorNeuralNet1::EstimatorNeuralNet1() : EstimatorNeuralNet()
+EstimatorNeuralNetCascade::EstimatorNeuralNetCascade() : EstimatorNeuralNet()
 {
     setupParams();
     val_data = NULL;
 }
 
-void EstimatorNeuralNet1::setupParams()
-
+void EstimatorNeuralNetCascade::setupParams()
 {
     cerr << "setup" << endl;
-    params["network_def"] = QVariant("../../../../x.credit_scoring.net");
+    params["network_def"] = QVariant("../../../../x.credit_scoring.cascade.net");
 }
 
 
-QString EstimatorNeuralNet1::getName()
+QString EstimatorNeuralNetCascade::getName()
 {
-    return "Multilayer Perceptron Neural Network";
+    return "Cascade Neural Network";
 }
 
-int nn_callback(struct fann *ann, struct fann_train_data * train,
+int cc_nn_callback(struct fann *ann, struct fann_train_data * train,
                       unsigned int max_epochs, unsigned int epochs_between_reports,
                       float desired_error, unsigned int epochs)
 {
     void * user_data = fann_get_user_data(ann);
-    EstimatorNeuralNet1* nnetobj = (EstimatorNeuralNet1*) user_data;
+    EstimatorNeuralNetCascade* nnetobj = (EstimatorNeuralNetCascade*) user_data;
 
     if (nnetobj != NULL)
         return nnetobj->net_callback(ann, train, max_epochs, epochs_between_reports, desired_error, epochs);
@@ -40,19 +39,19 @@ int nn_callback(struct fann *ann, struct fann_train_data * train,
     return 0;
 }
 
-int EstimatorNeuralNet1::net_callback(struct fann *ann, struct fann_train_data */*train*/,
-                 unsigned int max_epochs, unsigned int /*epochs_between_reports*/,
-                 float /*desired_error*/, unsigned int epochs)
+int EstimatorNeuralNetCascade::net_callback(struct fann *ann, struct fann_train_data */*train*/,
+                 unsigned int max_neurons, unsigned int /*neurons_between_reports*/,
+                 float /*desired_error*/, unsigned int total_epochs)
 {
-    if (this->break_when_possible)
-    {
-        this->break_when_possible = false;
-        cerr << "Breaking the training ..." << endl;
-        return -1;
-    }
-
     float error = fann_get_MSE(ann);
-    fprintf(stderr, "Epochs   %8d/%d. Current error: %.10f. Bit fail %d. ", epochs, max_epochs, error, ann->num_bit_fail);
+    fprintf(stderr, "Neurons     . Current error: %.6f. Total error:%8.4f. Epochs %5d. Bit fail %3d",
+            error, ann->MSE_value, total_epochs, ann->num_bit_fail);
+
+    if((ann->last_layer-2) != ann->first_layer)
+    {
+        fprintf(stderr, ". candidate steepness %.2f. function %s", (ann->last_layer-2)->first_neuron->activation_steepness,
+                FANN_ACTIVATIONFUNC_NAMES[(ann->last_layer-2)->first_neuron->activation_function]);
+    }
 
     val_data = this->getFannData(this->validationDataset);
     if (val_data)
@@ -80,7 +79,6 @@ int EstimatorNeuralNet1::net_callback(struct fann *ann, struct fann_train_data *
         average_error /= fann_length_train_data(val_data);
 
         fprintf(stderr, "  validation avg-err : %f   MSE: %f\n", average_error, fann_get_MSE(ann));
-        if (fann_get_MSE(ann) < 0.20) return -1;
         fann_reset_MSE(ann);
     } else {
         fprintf(stderr, "\n");
@@ -91,13 +89,57 @@ int EstimatorNeuralNet1::net_callback(struct fann *ann, struct fann_train_data *
     return 0; // -1 to break
 }
 
-void EstimatorNeuralNet1::loadNetwork()
+void EstimatorNeuralNetCascade::loadNetwork()
 {
     char * network_def = params["network_def"].toString().toUtf8().data();
     this->ann = fann_create_from_file(network_def);
 }
 
-void EstimatorNeuralNet1::test()
+void EstimatorNeuralNetCascade::createNetwork(int num_input, int num_output)
+{
+    unsigned int layers[2] = {num_input, num_output};
+    this->ann = fann_create_shortcut_array(2, layers);
+
+    // SIGMOID, SIGMOID_SYMMETRIC
+    fann_set_learning_rate(ann, 0.1);
+    fann_set_quickprop_decay(ann, 0.0);
+    fann_set_quickprop_mu(ann, 2.0);
+    fann_set_cascade_weight_multiplier(ann, 1);
+    fann_set_cascade_max_out_epochs(ann, 150);
+    fann_set_bit_fail_limit(ann, 0.35);
+    fann_set_activation_steepness_output(ann, 1);
+
+    fann_set_training_algorithm(ann, FANN_TRAIN_RPROP);
+
+    fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
+
+    fann_set_activation_function_output(ann, FANN_LINEAR_PIECE);
+    fann_set_activation_function_output(ann, FANN_LINEAR_PIECE_SYMMETRIC);
+    fann_set_activation_function_output(ann, FANN_SIGMOID_SYMMETRIC);
+    fann_set_activation_function_output(ann, FANN_LINEAR);
+
+    fann_set_train_error_function(ann, FANN_ERRORFUNC_TANH);
+    fann_set_train_error_function(ann, FANN_ERRORFUNC_LINEAR);
+
+
+    fann_randomize_weights(ann, 0.1, 0.1);
+
+/*
+    fann_set_cascade_weight_multiplier(ann, 0.4);
+    fann_set_cascade_candidate_limit(ann, 1000.0);
+    */
+    fann_set_cascade_output_change_fraction(ann, 0.01);
+    fann_set_cascade_candidate_change_fraction(ann, 0.01);
+
+    /*
+    steepnesses = (fann_type *)calloc(1,  sizeof(fann_type));
+    steepnesses[0] = (fann_type)1;
+    fann_set_cascade_activation_steepnesses(ann, steepnesses, 1);
+    */
+    fann_set_train_stop_function(ann, FANN_STOPFUNC_BIT);
+}
+
+void EstimatorNeuralNetCascade::test()
 {
     cerr << "ENN::test()" << endl;
 
@@ -133,50 +175,11 @@ void EstimatorNeuralNet1::test()
     fann_destroy(ann);
 }
 
-void turnoff_unneccesary_scales(struct fann * ann, unsigned int num_input, Dataset* dataset)
+void EstimatorNeuralNetCascade::train()
 {
-    int * should_scale = new int[num_input];
-
-    dataset->get_scale_flags(should_scale);
-
-    for(unsigned i = 0; i < num_input; i++)
-    {
-        if (should_scale[i] == 0)
-        {
-            ann->scale_new_min_in[i] = -1.0f; // for the odd (-1.0) in scale function
-            ann->scale_factor_in[i] = 1.0f;
-            ann->scale_deviation_in[i] = 1.0f;
-            ann->scale_mean_in[i] = 0.0;
-        }
-    }
-
-    delete[] should_scale;
-}
-
-void EstimatorNeuralNet1::createNetwork(int num_input, int num_output)
-{
-    unsigned int layers[] = {num_input, 60, 20, num_output};
-    this->ann = fann_create_standard_array(4, layers);
-
-    // SIGMOID, SIGMOID_SYMMETRIC, GAUSSIAN
-    fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
-    fann_set_activation_function_output(ann, FANN_LINEAR);
-
-    // INCREMENTAL, BATCH, RPROP, QUICKPROP
-    fann_set_training_algorithm(ann, FANN_TRAIN_RPROP);
-    // fann_set_learning_rate(ann, 0.8);
-    //fann_set_learning_rate(ann, 0.001);
-    //fann_set_learning_momentum(ann, 0.4);
-}
-
-void EstimatorNeuralNet1::train()
-{
-    const unsigned int max_epochs = 500;
-    const unsigned int epochs_between_reports = 5;
+    const unsigned int max_neurons = 30;
+    const unsigned int neurons_between_reports = 1;
     const float desired_error = (const float) 0.001;
-
-    this->is_running = true;
-    this->break_when_possible = false;
 
     struct fann_train_data * data = NULL;
     data = this->getFannData(this->dataset);
@@ -199,9 +202,7 @@ void EstimatorNeuralNet1::train()
             0,     /* New output minimum */
             1);    /* New output maximum */
 
-    turnoff_unneccesary_scales(ann, data->num_input, dataset);
-
-    fann_set_callback(ann, nn_callback);
+    fann_set_callback(ann, cc_nn_callback);
     fann_set_user_data(ann, this);
     fann_scale_train( ann, data );
 
@@ -212,13 +213,10 @@ void EstimatorNeuralNet1::train()
     cerr << "  " << data->output[0][0];
     cerr << endl;
 
-    fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
-    free( data );
+    fann_cascadetrain_on_data(ann, data, max_neurons, neurons_between_reports, desired_error);
 
-    cerr << "Saving the network ..." << endl;
     fann_save(ann, params["network_def"].toString().toUtf8().data());
 
-    this->is_running = false;
-
+    fann_destroy_train(data);
     fann_destroy(ann);
 }

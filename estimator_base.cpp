@@ -4,6 +4,8 @@ EstimatorBase::EstimatorBase()
 {
     this->dataset = NULL;
     this->validationDataset = NULL;
+    this->is_running = false;
+    this->break_when_possible = false;
 }
 
 QString EstimatorBase::getName()
