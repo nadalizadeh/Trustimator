@@ -16,6 +16,7 @@ public:
     virtual void setupParams() = 0;
     Dataset* dataset;
     Dataset* validationDataset;
+    virtual float estimate(float input[]) = 0;
 
 public:
     QMap<QString, QVariant> params;

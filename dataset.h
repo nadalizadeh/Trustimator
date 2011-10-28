@@ -14,6 +14,8 @@
 #define COL_TYPE_CAT   2
 #define COL_TYPE_META  3
 
+#define DONT_LEAVE_ANY -1
+
 class Dataset : public QAbstractTableModel
 {
     Q_OBJECT
@@ -26,9 +28,12 @@ public:
 
     int loadData(QString schema_file, QString data_file);
 
+    void leave_item_out(unsigned int row);
     void get_training_dimensions(unsigned int *num_data, unsigned int *num_input, unsigned int *num_output);
     void get_training_row(unsigned int row, float input[], float output[]);
     void get_scale_flags(int should_scale[]);
+
+    QVector< QMap<QString, QVariant> > getSchema();
 
 signals:
 
@@ -37,6 +42,7 @@ public slots:
 private:
     QVector< QMap<QString, QVariant> > schema;
     QVector<QStringList> vdata;
+    int leave_item;
 };
 
 

@@ -115,6 +115,8 @@ QVariant Dataset::data(const QModelIndex &index, int role) const
     default:
         return QVariant();
     }
+
+    return QVariant();
 }
 
 QVariant Dataset::headerData(int section, Qt::Orientation orientation, int role) const
@@ -132,12 +134,21 @@ QVariant Dataset::headerData(int section, Qt::Orientation orientation, int role)
         return QVariant();
 }
 
+QVector< QMap<QString, QVariant> > Dataset::getSchema()
+{
+    return this->schema;
+}
+
 // Learning algorithm dataset integeration
 void Dataset::get_training_dimensions(unsigned int *num_data, unsigned int *num_input, unsigned int *num_output)
 {
     *num_data = vdata.size();
     *num_input = schema.size()-1;
     *num_output = 1;
+
+    // Leave one out
+    if (leave_item != DONT_LEAVE_ANY)
+        (*num_data)--;
 
     // Filter Meta Columns
     for(int i=0; i<schema.size(); i++)
@@ -158,11 +169,22 @@ void Dataset::get_training_dimensions(unsigned int *num_data, unsigned int *num_
     }
 }
 
+void Dataset::leave_item_out(unsigned int row)
+{
+    leave_item = row;
+}
+
 void Dataset::get_training_row(unsigned int row, float input[], float output[])
 {
 //    unsigned int num_data, num_input, num_output;
 
     assert(row < (unsigned int)vdata.size());
+
+    if (leave_item != DONT_LEAVE_ANY)
+    {
+        if (row >= (unsigned)leave_item)
+            row++;
+    }
 
     QStringList cur_row = vdata[row];
     unsigned input_index = 0;

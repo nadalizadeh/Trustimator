@@ -91,68 +91,6 @@ int EstimatorNeuralNet1::net_callback(struct fann *ann, struct fann_train_data *
     return 0; // -1 to break
 }
 
-void EstimatorNeuralNet1::loadNetwork()
-{
-    char * network_def = params["network_def"].toString().toUtf8().data();
-    this->ann = fann_create_from_file(network_def);
-}
-
-void EstimatorNeuralNet1::test()
-{
-    cerr << "ENN::test()" << endl;
-
-    struct fann_train_data * data = NULL;
-    data = this->getFannData(this->dataset);
-
-    fann_type *calc_out;
-    float average_error = 0;
-
-    for(unsigned i = 0; i < fann_length_train_data(data); i++)
-    {
-        fann_reset_MSE(ann);
-        {
-            fann_scale_input( ann, data->input[i] );
-            calc_out = fann_run( ann, data->input[i] );
-            fann_descale_output( ann, calc_out );
-        }
-
-        average_error += (float) fann_abs(calc_out[0] - data->output[i][0]);
-        fprintf(stderr, "Result %f original %f error %f\n",
-               calc_out[0], data->output[i][0],
-               (float) fann_abs(calc_out[0] - data->output[i][0]));
-    }
-    average_error /= fann_length_train_data(data);
-
-    fprintf(stderr, "Average Error : %f\n", average_error);
-    fann_destroy_train(data);
-    if (val_data)
-    {
-        fann_destroy_train(val_data);
-        val_data = NULL;
-    }
-    fann_destroy(ann);
-}
-
-void turnoff_unneccesary_scales(struct fann * ann, unsigned int num_input, Dataset* dataset)
-{
-    int * should_scale = new int[num_input];
-
-    dataset->get_scale_flags(should_scale);
-
-    for(unsigned i = 0; i < num_input; i++)
-    {
-        if (should_scale[i] == 0)
-        {
-            ann->scale_new_min_in[i] = -1.0f; // for the odd (-1.0) in scale function
-            ann->scale_factor_in[i] = 1.0f;
-            ann->scale_deviation_in[i] = 1.0f;
-            ann->scale_mean_in[i] = 0.0;
-        }
-    }
-
-    delete[] should_scale;
-}
-
 void EstimatorNeuralNet1::createNetwork(int num_input, int num_output)
 {
     unsigned int layers[] = {num_input, 60, 20, num_output};
@@ -221,4 +159,5 @@ void EstimatorNeuralNet1::train()
     this->is_running = false;
 
     fann_destroy(ann);
+    ann = NULL;
 }

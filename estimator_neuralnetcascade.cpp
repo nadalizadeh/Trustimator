@@ -40,7 +40,7 @@ int cc_nn_callback(struct fann *ann, struct fann_train_data * train,
 }
 
 int EstimatorNeuralNetCascade::net_callback(struct fann *ann, struct fann_train_data */*train*/,
-                 unsigned int max_neurons, unsigned int /*neurons_between_reports*/,
+                 unsigned int /*max_neurons*/, unsigned int /*neurons_between_reports*/,
                  float /*desired_error*/, unsigned int total_epochs)
 {
     float error = fann_get_MSE(ann);
@@ -89,12 +89,6 @@ int EstimatorNeuralNetCascade::net_callback(struct fann *ann, struct fann_train_
     return 0; // -1 to break
 }
 
-void EstimatorNeuralNetCascade::loadNetwork()
-{
-    char * network_def = params["network_def"].toString().toUtf8().data();
-    this->ann = fann_create_from_file(network_def);
-}
-
 void EstimatorNeuralNetCascade::createNetwork(int num_input, int num_output)
 {
     unsigned int layers[2] = {num_input, num_output};
@@ -137,42 +131,6 @@ void EstimatorNeuralNetCascade::createNetwork(int num_input, int num_output)
     fann_set_cascade_activation_steepnesses(ann, steepnesses, 1);
     */
     fann_set_train_stop_function(ann, FANN_STOPFUNC_BIT);
-}
-
-void EstimatorNeuralNetCascade::test()
-{
-    cerr << "ENN::test()" << endl;
-
-    struct fann_train_data * data = NULL;
-    data = this->getFannData(this->dataset);
-
-    fann_type *calc_out;
-    float average_error = 0;
-
-    for(unsigned i = 0; i < fann_length_train_data(data); i++)
-    {
-        fann_reset_MSE(ann);
-        {
-            fann_scale_input( ann, data->input[i] );
-            calc_out = fann_run( ann, data->input[i] );
-            fann_descale_output( ann, calc_out );
-        }
-
-        average_error += (float) fann_abs(calc_out[0] - data->output[i][0]);
-        fprintf(stderr, "Result %f original %f error %f\n",
-               calc_out[0], data->output[i][0],
-               (float) fann_abs(calc_out[0] - data->output[i][0]));
-    }
-    average_error /= fann_length_train_data(data);
-
-    fprintf(stderr, "Average Error : %f\n", average_error);
-    fann_destroy_train(data);
-    if (val_data)
-    {
-        fann_destroy_train(val_data);
-        val_data = NULL;
-    }
-    fann_destroy(ann);
 }
 
 void EstimatorNeuralNetCascade::train()
@@ -219,4 +177,5 @@ void EstimatorNeuralNetCascade::train()
 
     fann_destroy_train(data);
     fann_destroy(ann);
+    ann = NULL;
 }

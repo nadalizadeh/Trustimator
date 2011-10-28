@@ -2,7 +2,9 @@
 #include "ui_mainwindow.h"
 #include <iostream>
 #include "estimator_neuralnet1.h"
+#include "estimator_leaveoneout.h"
 #include "estimator_neuralnetcascade.h"
+#include "single_estimate_dialog.h"
 
 using namespace std;
 
@@ -27,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if (res != DS_ERR_SUCCEED) cerr << "Failed to open file." << endl;
 
     this->nnet = new EstimatorNeuralNet1();
+    //this->nnet = new EstimatorLeaveOneOut();
 }
 
 MainWindow::~MainWindow()
@@ -71,4 +74,10 @@ void MainWindow::on_testButton_clicked()
 
     nnet->loadNetwork();
     nnet->test();
+}
+
+void MainWindow::on_singleEstimateButton_clicked()
+{
+    SingleEstimateDialog* single_estimate = new SingleEstimateDialog(this, this->dataSet, this->nnet);
+    single_estimate->show();
 }

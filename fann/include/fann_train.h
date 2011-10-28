@@ -20,6 +20,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef __fann_train_h__
 #define __fann_train_h__
 
+#include <stdio.h>
+
 /* Section: FANN Training 
  
  	There are many different ways of training neural networks and the FANN library supports

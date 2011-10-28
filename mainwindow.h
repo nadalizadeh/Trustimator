@@ -23,6 +23,7 @@ private:
     class EstimatorNeuralNet* nnet;
 
 private slots:
+    void on_singleEstimateButton_clicked();
     void on_testButton_clicked();
     void on_goButton_clicked();
 

@@ -29,7 +29,9 @@ SOURCES += main.cpp\
     estimator_base.cpp \
     estimator_neuralnet1.cpp \
     estimator_neuralnet.cpp \
-    estimator_neuralnetcascade.cpp
+    estimator_neuralnetcascade.cpp \
+    estimator_leaveoneout.cpp \
+    single_estimate_dialog.cpp
 
 HEADERS  += mainwindow.h \
     QJson/stack.hh \
@@ -47,7 +49,6 @@ HEADERS  += mainwindow.h \
     QJson/json_parser.hh \
     dataset.h \
     fann/include/floatfann.h \
-    fann/include/fixedfann.h \
     fann/include/fann.h \
     fann/include/fann_train.h \
     fann/include/fann_io.h \
@@ -57,13 +58,15 @@ HEADERS  += mainwindow.h \
     fann/include/fann_cpp.h \
     fann/include/fann_cascade.h \
     fann/include/fann_activation.h \
-    fann/include/doublefann.h \
     fann/include/config.h \
     fann/include/compat_time.h \
     estimator_base.h \
     estimator_neuralnet1.h \
     estimator_neuralnet.h \
-    estimator_neuralnetcascade.h
+    estimator_neuralnetcascade.h \
+    estimator_leaveoneout.h \
+    single_estimate_dialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    single_estimate_dialog.ui
 INCLUDEPATH += fann/include
